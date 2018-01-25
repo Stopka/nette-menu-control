@@ -1,0 +1,21 @@
+{
+  "name": "stopka/nette-menu-control",
+  "description": "Control for building simple menus",
+  "keywords": ["nette", "menu"],
+  "license": ["GPL-3.0"],
+  "authors": [
+    {
+      "name": "Štěpán Škorpil",
+      "homepage": "https://skorpils.cz"
+    }
+  ],
+  "require": {
+    "php": ">=7.1"
+  },
+  "require-dev": {
+    "nette/tester": "^2.0"
+  },
+  "autoload": {
+    "classmap": ["src/"]
+  }
+}
