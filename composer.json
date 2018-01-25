@@ -1,6 +1,6 @@
 {
   "name": "stopka/nette-menu-control",
-  "license": "GPL-3.0",
+  "license": "GPL-3.0-only",
   "description": "Control for building simple menus",
   "keywords": ["nette", "menu"],
   "authors": [
