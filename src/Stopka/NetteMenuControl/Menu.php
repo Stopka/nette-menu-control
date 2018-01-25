@@ -1,6 +1,6 @@
 <?php
 
-namespace Stopka\NetteMenu;
+namespace Stopka\NetteMenuControl;
 
 use Nette\Application\IPresenter;
 use Nette\Application\UI\Control;
