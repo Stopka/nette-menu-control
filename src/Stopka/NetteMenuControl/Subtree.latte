@@ -1,0 +1,9 @@
+{control $node:item}
+{var $children=$node->getChildren()}
+<ul n:if="$children->count()>0" n:class="$node->getClass()">
+    {foreach $children as $child}
+        <li n:if="$child->getShow()" n:class="$child->isActive()?active,$child->isInPath()?in_path,$child->getClass()">
+            {control $child:subtree}
+        </li>
+    {/foreach}
+</ul>
