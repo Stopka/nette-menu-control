@@ -95,6 +95,7 @@ class Menu extends Control {
         $this->link = $link;
         $this->linkArgs = $linkArgs;
         $this->title = $title;
+        $this->submenuFactory = $submenuFactory;
     }
 
     /**
