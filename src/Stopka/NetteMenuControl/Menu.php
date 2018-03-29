@@ -18,7 +18,7 @@ class Menu extends Control {
 
     const LINK_PARAM_PROCESSOR_ALL = '*';
 
-    /** @var ITranslator */
+    /** @var ITranslator|null */
     protected $translator;
 
     /** @var bool */
@@ -75,14 +75,18 @@ class Menu extends Control {
     /** @var bool */
     protected $beforeRenderCalled = false;
 
+    /** @var ISubmenuFactory */
+    protected $submenuFactory;
+
     /**
      * App\Controls\Menus\Menu item constructor.
+     * @param ISubmenuFactory $submenuFactory
      * @param ITranslator $translator
-     * @param string|callable $link url, nette link or callback
+     * @param string|callable|null $link url, nette link or callback
      * @param array $linkArgs
      * @param string $title
      */
-    public function __construct(?ITranslator $translator, string $title, $link, array $linkArgs = []) {
+    public function __construct(ISubmenuFactory $submenuFactory, ?ITranslator $translator, string $title, $link = null, array $linkArgs = []) {
         parent::__construct();
         $this->translator = $translator;
         $this->link = $link;
@@ -119,34 +123,34 @@ class Menu extends Control {
 
     /**
      * Adds next menu item as a child
-     * @param string|callable $link
+     * @param string|callable|null $link
      * @param array $linkArgs
      * @param \string $title
      * @param \string $name
-     * @return Menu
+     * @return self
      */
-    public function add(string $title, $link, array $linkArgs = [], $name = NULL): Menu {
+    public function addSubmenu(string $title, $link = null, array $linkArgs = [], $name = NULL): self {
         if ($name === NULL) {
             $name = $this->generateSubcomponentName();
         }
-        $result = new Menu($this->translator, $title, $link, $linkArgs);
-        $this->addComponent($result, $name);
-        return $result;
+        $menu = $this->submenuFactory->createSubmenu($title, $link, $linkArgs);
+        $this->addComponent($menu, $name);
+        return $menu;
     }
 
     /**
-     * Creates instance of class and adds it to the tree
-     * @param \string $class class name
-     * @param \string $name
-     * @return Menu
-     * @throws \Exception
+     * Creates instance of menu createed by factory
+     * @param IMenuFactory $factory
+     * @param \string|null $name
+     * @return self
      */
-    public function addMenu($class, $name) {
-        if (!is_subclass_of($class, Menu::class)) {
-            throw new MenuException("$class is not subclass of App\Controls\Menus\Menu");
+    public function addSubmenuFromFactory(IMenuFactory $factory, ?string $name = null): self {
+        if ($name === NULL) {
+            $name = $this->generateSubcomponentName();
         }
-        $result = new $class($this->translator, $this, $name);
-        return $result;
+        $menu = $factory->create();
+        $this->addComponent($menu, $name);
+        return $menu;
     }
 
     /**
@@ -203,6 +207,7 @@ class Menu extends Control {
     }
 
     public function renderItem(bool $showLink = true) {
+        /** @noinspection PhpDeprecationInspection */
         $this->callBeforeRender();
         $html = $this->buildItemHtml($showLink);
         $this->renderHtml($html);
@@ -213,6 +218,7 @@ class Menu extends Control {
      * @throws MenuException
      */
     public function renderTree(string $rootName = null) {
+        /** @noinspection PhpDeprecationInspection */
         $this->callBeforeRender();
         $template = $this->getTemplate();
         $template->setFile(__DIR__ . '/Tree.latte');
@@ -232,6 +238,7 @@ class Menu extends Control {
     }
 
     public function renderSubtree() {
+        /** @noinspection PhpDeprecationInspection */
         $this->callBeforeRender();
         $template = $this->getTemplate();
         $template->setFile(__DIR__ . '/Subtree.latte');
@@ -241,7 +248,7 @@ class Menu extends Control {
     }
 
     protected function buildListHtml(): Html {
-        return Html::el('ul',[
+        return Html::el('ul', [
             'class' => $this->getClass()
         ]);
     }
@@ -276,15 +283,16 @@ class Menu extends Control {
     }
 
     public function renderPath() {
+        /** @noinspection PhpDeprecationInspection */
         $this->callBeforeRender();
         $html = $this->buildPathHtml();
         $this->renderHtml($html);
     }
 
-    protected function buildChildrenHtml():Html{
+    protected function buildChildrenHtml(): Html {
         $html = $this->buildListHtml();
-        foreach ($this->getChildren() as $node){
-            if(!$node->getShow()){
+        foreach ($this->getChildren() as $node) {
+            if (!$node->getShow()) {
                 continue;
             }
             $html->addHtml($node->buildListItemHtml());
@@ -297,6 +305,7 @@ class Menu extends Control {
      * @throws MenuException
      */
     public function renderChildren(string $nodeName = NULL) {
+        /** @noinspection PhpDeprecationInspection */
         $this->callBeforeRender();
         if ($nodeName == NULL) {
             $node = $this;
@@ -307,18 +316,22 @@ class Menu extends Control {
     }
 
     /**
-     * @param $name
-     * @return Menu
+     * @param string $name
+     * @param bool $needed
+     * @return Menu|null
      * @throws MenuException
      */
-    public function getDeepMenuComponent($name): Menu {
+    public function getDeepMenuComponent(string $name, bool $needed = true): ?Menu {
         $all = $this->getComponents(true, Menu::class);
         foreach ($all as $one) {
             if ($one->getName() == $name) {
                 return $one;
             }
         }
-        throw new MenuException("Component not found");
+        if ($needed) {
+            throw new MenuException("Component not found");
+        }
+        return null;
     }
 
     /**
@@ -333,10 +346,13 @@ class Menu extends Control {
     }
 
     /**
-     * Vrací vygenerovanou URL
+     * Generates url from link params if possible
      * @return null|string
      */
     public function getUrl(): ?string {
+        if ($this->link === null) {
+            return null;
+        }
         if (is_callable($this->link)) {
             return call_user_func($this->link);
         }
@@ -362,10 +378,28 @@ class Menu extends Control {
     }
 
     /**
+     * @param callable|string|null $link
+     * @return $this
+     */
+    public function setLink($link): self {
+        $this->link = $link;
+        return $this;
+    }
+
+    /**
+     * @param callable|string $title
+     * @return $this
+     */
+    public function setTitle($title): self {
+        $this->title = $title;
+        return $this;
+    }
+
+    /**
      * Returns translated title
      * @return \string
      */
-    public function getTitle() {
+    public function getTitle(): string {
         if (!$this->translator || $this->disableTranslation) {
             return $this->title;
         }
@@ -376,11 +410,15 @@ class Menu extends Control {
      * @param ITranslator|null $translator
      * @return $this
      */
-    public function setTranslator(?ITranslator $translator) {
+    public function setTranslator(?ITranslator $translator): self {
         $this->translator = $translator;
         return $this;
     }
 
+    /**
+     * @param bool $disable
+     * @return $this
+     */
     public function disableTranslation(bool $disable = true): self {
         $this->disableTranslation = $disable;
         return $this;
@@ -389,18 +427,18 @@ class Menu extends Control {
     /**
      * Children of current menu item
      * @param bool $deep
-     * @return \Iterator|Menu[]
+     * @return \Iterator|self[]
      */
-    public function getChildren($deep = FALSE) {
+    public function getChildren($deep = FALSE): \Iterator {
         return $this->getComponents($deep, Menu::class);
     }
 
     /**
      * Sets if item is visible in menu
      * @param callback|string $show
-     * @return Menu
+     * @return $this
      */
-    public function setShow($show) {
+    public function setShow($show): self {
         $this->show = $show;
 
         return $this;
@@ -427,7 +465,7 @@ class Menu extends Control {
      * @param string $paramName
      * @return $this
      */
-    public function setLinkParamNeeded(?string $key = null, $defaultValue = null, string $paramName = 'id') {
+    public function setLinkParamNeeded(?string $key = null, $defaultValue = null, string $paramName = 'id'): self {
         $this->linkParamNeeded = $key;
         $this->linkParamValue = $defaultValue;
         $this->linkParamName = $paramName;
@@ -435,67 +473,71 @@ class Menu extends Control {
     }
 
     /**
-     * Sets html class
+     * Sets css class
      * @param callback|string $class
-     * @return Menu
+     * @return $this
      */
-    public function setClass($class) {
+    public function setClass($class): self {
         $this->class = $class;
         return $this;
     }
 
     /**
      * Sets icon
-     * @param \string $class
-     * @return Menu $this
+     * @param \string|null $class
+     * @return $this
      */
-    public function setIcon($class) {
+    public function setIcon(?string $class): self {
         $this->icon = $class;
         return $this;
     }
 
-    public function getIcon() {
+    public function getIcon(): ?string {
         return $this->icon;
     }
 
     /**
-     * Vrátí css třídu položky
-     * @return \string
+     * Css class of item
+     * @return \string|null
      */
-    public function getClass() {
+    public function getClass(): ?string {
         if (is_callable($this->class)) {
             return call_user_func($this->class, $this);
         }
         return $this->class;
     }
 
-    public function isActive() {
+    /**
+     * Is this menu item's link your actual position on the web?
+     * @return bool
+     */
+    public function isActive(): bool {
         return $this->active;
     }
 
     /**
-     * Zda je položka vypisovatelná a aktivní
+     * Is this menu item your actual position on the web?
      * @return bool
      */
-    public function isCurrent() {
+    public function isCurrent(): bool {
         return ($this->currentable && $this->isActive());
     }
 
     /**
-     * Nastaví příznak, zda může být použit v cestě jako aktivní
+     * Sets if this item can ever be actual position on the web
      * @param bool $bool
-     * @return Menu
+     * @return $this
      */
-    public function setCurentable($bool = true) {
+    public function setCurentable(bool $bool = true): self {
         $this->currentable = $bool;
         return $this;
     }
 
     /**
-     * Vrátí cestu App\Controls\Menus\Menu prvků od tohoto prvku ke kořeni
-     * @return Menu[]
+     * Returns path of items back to the root menu
+     * @return self[]
      */
-    public function getPath() {
+    public function getPath(): array {
         $path = Array($this);
         if ($this->parent instanceof Menu) {
             $path = array_merge($this->parent->getPath(), $path);
@@ -504,21 +546,21 @@ class Menu extends Control {
     }
 
     /**
-     * Najde v podstromu aktivní prvky
-     * @return Menu[]
+     * Searches subtree for menu items marked as current
+     * @return self[]
      */
-    public function findCurrent() {
+    public function findCurrent(): array {
         return $this->find(function (Menu $node) {
             return $node->isCurrent();
         });
     }
 
     /**
-     * Najde v podstromu prvky odpovídající vyhodnocovacímu callbacku
+     * Serches subtree of components by calback criteria
      * @param callback $check
-     * @return Menu[]
+     * @return self[]
      */
-    protected function find($check) {
+    protected function find($check): array {
         $result = Array();
         foreach ($this->getChildren(TRUE) as $child) {
             if ((boolean)call_user_func($check, $child)) {
@@ -529,10 +571,10 @@ class Menu extends Control {
     }
 
     /**
-     * Vrátí cestu prvků k prvnímu aktivnímu prvku
-     * @return Menu[]
+     * Returns path from root to first item marked as current
+     * @return self[]
      */
-    public function getCurrentPath() {
+    public function getCurrentPath(): array {
         $node = $this->findCurrent();
         if (count($node) == 0) {
             return Array($this);
@@ -541,49 +583,57 @@ class Menu extends Control {
     }
 
     /**
-     * Nastaví příznak aktivní položky
+     * Sets item as active
      * @param \bool $value
+     * @internal
+     * @return $this;
      */
-    public function setActive($value = true) {
+    public function setActive(bool $value = true): self {
         $this->active = $value;
+        return $this;
     }
 
     /**
-     * Nastaví příznak položky obsažené v cestě
-     * Příznak se nastaví i na rodičovi
+     * Sets in path flag,
+     * this flag can be set also to parent item automatically
      * @param bool $value
-     * @param bool|int $set_parent je-li číslené, určiuje do jaké úrovně rodičů se má hodnota nastavit
+     * @param bool|int $toParent how many layers of parents, true means all
+     * @internal
+     * @return $this
      */
-    public function setInPath($value = true, $set_parent = true) {
+    public function setInPath(bool $value = true, $toParent = true): self {
         $this->inPath = $value;
-        if ($set_parent) {
-            /** @var Menu $parent */
+        if ($toParent) {
+            /** @var self $parent */
             $parent = $this->getParent();
-            if (is_a($parent, "Elearning\Util\Menu\Menu")) {
-                $set_parent = is_int($set_parent) ? $set_parent - 1 : true;
-                $parent->setInPath($value, $set_parent);
+            if (is_a($parent, self::class)) {
+                $toParent = is_int($toParent) ? $toParent - 1 : true;
+                $parent->setInPath($value, $toParent);
             }
         }
+        return $this;
     }
 
     /**
-     * Vrátí zda je nastaven příznak, že je položka v cestě
-     * @param bool $currentable_only zda se má počítat jen je-li položka currentable
+     * Is item in path of your current position on the web
+     * @param bool $currentableOnly only if is currentable
      * @return bool
      */
-    public function isInPath($currentable_only = false) {
-        if ($currentable_only && !$this->currentable) {
+    public function isInPath(bool $currentableOnly = false) {
+        if ($currentableOnly && !$this->currentable) {
             return false;
         }
         return $this->inPath;
     }
 
     /**
-     * Nastaví autamaticky příznak aktivní položky a cesty v podstromu menu
+     * Automatically sets current, active and inPath flags using presenter
      * @throws MenuException
      */
-    public function setActiveByPresenter() {
-        if ($this->hasDirectUrl()) {
+    public function setActiveByPresenter(): void {
+        if ($this->link === null) {
+
+        } else if ($this->hasDirectUrl()) {
             $this->setActive(false);
         } else {
             try {
@@ -628,7 +678,7 @@ class Menu extends Control {
      * @param callable|null $callback
      * @return $this
      */
-    public function setLinkParamPreprocessor(string $key = self::LINK_PARAM_PROCESSOR_ALL, ?callable $callback) {
+    public function setLinkParamPreprocessor(string $key = self::LINK_PARAM_PROCESSOR_ALL, ?callable $callback): self {
         if (!$callback) {
             unset($this->linkParamPreprocesors[$key]);
             return $this;
@@ -651,10 +701,10 @@ class Menu extends Control {
 
 
     /**
-     * Zjistí zda má uživatel právo vidět položku
+     * Checks if user is authorized to view this item
      * @return \bool
      */
-    public function isAllowed() {
+    public function isAllowed(): bool {
         return $this->getPresenter()
             ->getUser()
             ->isAllowed($this->authorizationResource, $this->authorizationPrivilege);
@@ -665,11 +715,12 @@ class Menu extends Control {
             return;
         }
         $this->beforeRenderCalled = true;
+        /** @noinspection PhpDeprecationInspection */
         $this->beforeRender();
     }
 
     /**
-     * Voláno před renderováním komponenty
+     * @deprecated
      */
     protected function beforeRender() {
 
