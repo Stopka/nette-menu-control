@@ -63,6 +63,9 @@ class Menu extends Control {
     /** @var  callable[] */
     protected $linkParamPreprocesors = [];
 
+    /** @var bool  */
+    protected $authorizationSet = false;
+
     /** @var null|string */
     protected $authorizationResource = NULL;
 
@@ -292,7 +295,7 @@ class Menu extends Control {
     protected function buildChildrenHtml(): Html {
         $html = $this->buildListHtml();
         foreach ($this->getChildren() as $node) {
-            if (!$node->getShow()) {
+            if (!$node->isVisible()) {
                 continue;
             }
             $html->addHtml($node->buildListItemHtml());
@@ -429,8 +432,12 @@ class Menu extends Control {
      * @param bool $deep
      * @return \Iterator|self[]
      */
-    public function getChildren($deep = FALSE): \Iterator {
-        return $this->getComponents($deep, Menu::class);
+    public function getChildren($deep = FALSE): array {
+        $result = [];
+        foreach ($this->getComponents($deep, self::class) as $component){
+            $result[] = $component;
+        }
+        return $result;
     }
 
     /**
@@ -449,13 +456,18 @@ class Menu extends Control {
      * @return \bool
      */
     public function getShow(): bool {
-        if (!$this->isAllowed()) {
-            return FALSE;
-        }
         if (is_callable($this->show)) {
             return (boolean)call_user_func($this->show, $this);
         }
         return $this->show;
+    }
+
+    /**
+     * Checks if is allowed and is shown
+     * @return bool
+     */
+    public function isVisible(): bool{
+        return $this->getShow() && $this->isAllowed();
     }
 
     /**
@@ -696,6 +708,17 @@ class Menu extends Control {
     public function setAuthorization(?string $resource = NULL, ?string $privilege = NULL): self {
         $this->authorizationResource = $resource;
         $this->authorizationPrivilege = $privilege;
+        $this->authorizationSet = true;
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function resetAuthorization(): self {
+        $this->authorizationResource = null;
+        $this->authorizationPrivilege = null;
+        $this->authorizationSet = false;
         return $this;
     }
 
