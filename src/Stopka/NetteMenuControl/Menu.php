@@ -729,6 +729,9 @@ class Menu extends Control {
      * @return \bool
      */
     public function isAllowed(): bool {
+        if(!$this->authorizationSet){
+            return true;
+        }
         return $this->getPresenter()
             ->getUser()
             ->isAllowed($this->authorizationResource, $this->authorizationPrivilege);
