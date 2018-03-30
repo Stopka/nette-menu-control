@@ -63,7 +63,7 @@ class Menu extends Control {
     /** @var  callable[] */
     protected $linkParamPreprocesors = [];
 
-    /** @var bool  */
+    /** @var bool */
     protected $authorizationSet = false;
 
     /** @var null|string */
@@ -158,10 +158,56 @@ class Menu extends Control {
     }
 
     /**
+     * Returns parent menu item for back button
+     * @return Menu|null
+     */
+    public function findUpper(): ?self {
+        $url = $this->getUrl();
+        $currents = $this->findCurrent();
+        if (!$currents) {
+            return null;
+        }
+        $path = $currents[0]->getPath();
+        if (count($path) == 1) {
+            return null;
+        }
+        $nodeUrl = null;
+        for ($i = count($path) - 2; $i > 0; $i--) {
+            $node = $path[$i];
+            $nodeUrl = $node->getUrl();
+            if ($node->currentable && $nodeUrl && $nodeUrl != $url) {
+                return $node;
+            }
+        }
+        if ($nodeUrl == $url) {
+            return null;
+        }
+        return $path[0];
+    }
+
+    /**
      * @throws MenuException
      */
-    public function render() {
+    public function render(): void {
         $this->renderTree();
+    }
+
+    public function renderUpper(): void {
+        $node = $this->findUpper();
+        if (!$node) {
+            return;
+        }
+        $html = $node->buildUpperHtml();
+        $this->renderHtml($html);
+    }
+
+    public function buildUpperIcon(): Html {
+        return Html::el("i", ['class' => 'upper-icon']);
+    }
+
+    public function buildUpperHtml(): Html {
+        return Html::el('div', $this->buildItemAttributes())
+            ->addHtml($this->buildItemHtml(true, $this->buildUpperIcon()));
     }
 
     protected function buildItemIconHtml(): Html {
@@ -195,14 +241,21 @@ class Menu extends Control {
         return Html::el('span');
     }
 
-    protected function buildItemHtml(bool $showLink = true): Html {
+    protected function buildItemHtml(bool $showLink = true, ?Html $prependHtml = null, ?Html $appendHtml = null): Html {
         $html = null;
         if ($showLink && $url = $this->getUrl()) {
             $html = $this->buildLinkHtml();
         } else {
             $html = $this->buildNonLinkHtml();
         }
+        if ($prependHtml) {
+            $html->addHtml($prependHtml);
+        }
         $html->addHtml($this->buildItemInnerHtml());
+
+        if ($appendHtml) {
+            $html->addHtml($appendHtml);
+        }
         return $html;
     }
 
@@ -257,7 +310,10 @@ class Menu extends Control {
         ]);
     }
 
-    protected function buildListItemHtml(): Html {
+    /**
+     * @return array of attribute => [values]
+     */
+    protected function buildItemAttributes(): array {
         $classes = [$this->getClass()];
         if ($this->isActive()) {
             $classes[] = 'active';
@@ -268,9 +324,13 @@ class Menu extends Control {
         if ($this->isCurrent()) {
             $classes[] = 'current';
         }
-        $html = Html::el('li', [
+        return [
             'class' => $classes
-        ]);
+        ];
+    }
+
+    protected function buildListItemHtml(): Html {
+        $html = Html::el('li', $this->buildItemAttributes());
         $html->addHtml($this->buildItemHtml());
         return $html;
     }
@@ -435,7 +495,7 @@ class Menu extends Control {
      */
     public function getChildren($deep = FALSE): array {
         $result = [];
-        foreach ($this->getComponents($deep, self::class) as $component){
+        foreach ($this->getComponents($deep, self::class) as $component) {
             $result[] = $component;
         }
         return $result;
@@ -467,7 +527,7 @@ class Menu extends Control {
      * Checks if is allowed and is shown
      * @return bool
      */
-    public function isVisible(): bool{
+    public function isVisible(): bool {
         return $this->getShow() && $this->isAllowed();
     }
 
@@ -729,7 +789,7 @@ class Menu extends Control {
      * @return \bool
      */
     public function isAllowed(): bool {
-        if(!$this->authorizationSet){
+        if (!$this->authorizationSet) {
             return true;
         }
         return $this->getPresenter()
@@ -754,5 +814,3 @@ class Menu extends Control {
     }
 
 }
-
-
