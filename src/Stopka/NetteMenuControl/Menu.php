@@ -612,8 +612,9 @@ class Menu extends Control {
      */
     public function getPath(): array {
         $path = Array($this);
-        if ($this->parent instanceof Menu) {
-            $path = array_merge($this->parent->getPath(), $path);
+        $parent = $this->getParentMenu();
+        if ($parent) {
+            $path = array_merge($parent->getPath(), $path);
         }
         return $path;
     }
@@ -666,6 +667,15 @@ class Menu extends Control {
         return $this;
     }
 
+    public function getParentMenu(): ?self {
+        /** @var self $parent */
+        $parent = $this->getParent();
+        if (!is_a($parent, self::class)) {
+            return null;
+        }
+        return $parent;
+    }
+
     /**
      * Sets in path flag,
      * this flag can be set also to parent item automatically
@@ -677,11 +687,9 @@ class Menu extends Control {
     public function setInPath(bool $value = true, $toParent = true): self {
         $this->inPath = $value;
         if ($toParent) {
-            /** @var self $parent */
-            $parent = $this->getParent();
-            if (is_a($parent, self::class)) {
-                $toParent = is_int($toParent) ? $toParent - 1 : true;
-                $parent->setInPath($value, $toParent);
+            $parent = $this->getParentMenu();
+            if ($parent) {
+                $parent->setInPath(true, $toParent);
             }
         }
         return $this;
