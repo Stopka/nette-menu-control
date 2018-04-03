@@ -162,11 +162,11 @@ class Menu extends Control {
      * @return Menu|null
      */
     public function findUpper(): ?self {
-        $url = $this->getUrl();
         $currents = $this->findCurrent();
         if (!$currents) {
             return null;
         }
+        $url = $currents[0]->getUrl();
         $path = $currents[0]->getPath();
         if (count($path) == 1) {
             return null;
