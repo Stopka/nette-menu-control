@@ -823,4 +823,16 @@ class Menu extends Control {
 
     }
 
+    /**
+     * @return self
+     */
+    public function getMenuRoot() : self {
+        $parent = $this->getParent();
+        if(!is_a($parent,self::class)){
+            return $this;
+        }
+        /** @var $parent self */
+        return $parent->getMenuRoot();
+    }
+
 }
