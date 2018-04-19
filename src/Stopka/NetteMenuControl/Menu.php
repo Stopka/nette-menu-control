@@ -713,8 +713,10 @@ class Menu extends Control {
      */
     public function setActiveByPresenter(): void {
         if ($this->link === null) {
-
+            $this->setActive(false);
         } else if ($this->hasDirectUrl()) {
+            $this->setActive(false);
+        } else if (is_callable($this->link)) {
             $this->setActive(false);
         } else {
             try {
