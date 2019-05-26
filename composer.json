@@ -10,14 +10,16 @@
     }
   ],
   "require": {
-    "php": ">=7.1",
-    "nette/application": "^2.4",
-    "nette/security": "^2.4"
+    "php": ">=7.2",
+    "nette/application": "^3.0",
+    "nette/security": "^3.0"
   },
   "require-dev": {
-    "nette/tester": "^2.0"
+    "nette/tester": "^2.2"
   },
   "autoload": {
-    "classmap": ["src/"]
+    "psr-4": {
+      "\\": "src/"
+    }
   }
 }
