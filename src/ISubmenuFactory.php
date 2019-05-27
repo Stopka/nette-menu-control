@@ -9,6 +9,7 @@
 namespace Stopka\NetteMenuControl;
 
 
-interface ISubmenuFactory {
+interface ISubmenuFactory
+{
     public function createSubmenu(string $title, $link = null, array $linkArgs = []): Menu;
 }

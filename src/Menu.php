@@ -14,7 +14,8 @@ use Nette\Utils\Strings;
  *
  * @author stopka
  */
-class Menu extends Control {
+class Menu extends Control
+{
 
     const LINK_PARAM_PROCESSOR_ALL = '*';
 
@@ -49,7 +50,7 @@ class Menu extends Control {
     protected $icon;
 
     /** @var callback|bool */
-    private $show = TRUE;
+    private $show = true;
 
     /** @var  mixed */
     protected $linkParamValue;
@@ -67,10 +68,10 @@ class Menu extends Control {
     protected $authorizationSet = false;
 
     /** @var null|string */
-    protected $authorizationResource = NULL;
+    protected $authorizationResource = null;
 
     /** @var null|string */
-    protected $authorizationPrivilege = NULL;
+    protected $authorizationPrivilege = null;
 
     /** @var callback|string */
     protected $class;
@@ -89,20 +90,29 @@ class Menu extends Control {
      * @param array $linkArgs
      * @param string $title
      */
-    public function __construct(ISubmenuFactory $submenuFactory, ?ITranslator $translator, string $title, $link = null, array $linkArgs = []) {
-        parent::__construct();
+    public function __construct(
+        ISubmenuFactory $submenuFactory,
+        ?ITranslator $translator,
+        string $title,
+        $link = null,
+        array $linkArgs = []
+    ) {
         $this->translator = $translator;
         $this->link = $link;
         $this->linkArgs = $linkArgs;
         $this->title = $title;
         $this->submenuFactory = $submenuFactory;
+        $this->monitor(IPresenter::class, function () {
+            $this->setActiveByPresenter();
+        });
     }
 
     /**
      * Generates original subcomponent name automatically
      * @return string
      */
-    private function generateSubcomponentName(): string {
+    private function generateSubcomponentName(): string
+    {
         $name = 'menu';
         $trial = $name;
         $count = 1;
@@ -111,17 +121,6 @@ class Menu extends Control {
             $count++;
         }
         return $trial;
-    }
-
-    /**
-     * @param $presenter
-     * @throws MenuException
-     */
-    protected function attached($presenter) {
-        parent::attached($presenter);
-        if (is_subclass_of($presenter, IPresenter::class)) {
-            $this->setActiveByPresenter();
-        }
     }
 
 
@@ -133,8 +132,9 @@ class Menu extends Control {
      * @param \string $name
      * @return self
      */
-    public function addSubmenu(string $title, $link = null, array $linkArgs = [], $name = NULL): self {
-        if ($name === NULL) {
+    public function addSubmenu(string $title, $link = null, array $linkArgs = [], $name = null): self
+    {
+        if ($name === null) {
             $name = $this->generateSubcomponentName();
         }
         $menu = $this->submenuFactory->createSubmenu($title, $link, $linkArgs);
@@ -148,8 +148,9 @@ class Menu extends Control {
      * @param \string|null $name
      * @return self
      */
-    public function addSubmenuFromFactory(IMenuFactory $factory, ?string $name = null): self {
-        if ($name === NULL) {
+    public function addSubmenuFromFactory(IMenuFactory $factory, ?string $name = null): self
+    {
+        if ($name === null) {
             $name = $this->generateSubcomponentName();
         }
         $menu = $factory->create();
@@ -161,7 +162,8 @@ class Menu extends Control {
      * Returns parent menu item for back button
      * @return Menu|null
      */
-    public function findUpper(): ?self {
+    public function findUpper(): ?self
+    {
         $currents = $this->findCurrent();
         if (!$currents) {
             return null;
@@ -188,11 +190,13 @@ class Menu extends Control {
     /**
      * @throws MenuException
      */
-    public function render(): void {
+    public function render(): void
+    {
         $this->renderTree();
     }
 
-    public function renderUpper(): void {
+    public function renderUpper(): void
+    {
         $node = $this->findUpper();
         if (!$node) {
             return;
@@ -201,16 +205,19 @@ class Menu extends Control {
         $this->renderHtml($html);
     }
 
-    public function buildUpperIcon(): Html {
+    public function buildUpperIcon(): Html
+    {
         return Html::el("i", ['class' => 'upper-icon']);
     }
 
-    public function buildUpperHtml(): Html {
+    public function buildUpperHtml(): Html
+    {
         return Html::el('div', $this->buildItemAttributes())
             ->addHtml($this->buildItemHtml(true, $this->buildUpperIcon()));
     }
 
-    protected function buildItemIconHtml(): Html {
+    protected function buildItemIconHtml(): Html
+    {
         if ($this->getIcon()) {
             return Html::el('i', [
                 'class' => $this->getIcon()
@@ -219,29 +226,34 @@ class Menu extends Control {
         return Html::el();
     }
 
-    protected function buildItemTitleHtml(): Html {
+    protected function buildItemTitleHtml(): Html
+    {
         return Html::el('span')
             ->addText($this->getTitle());
     }
 
-    protected function buildItemInnerHtml(): Html {
+    protected function buildItemInnerHtml(): Html
+    {
         $html = Html::el();
         $html->addHtml($this->buildItemIconHtml());
         $html->addHtml($this->buildItemTitleHtml());
         return $html;
     }
 
-    protected function buildLinkHtml(): Html {
+    protected function buildLinkHtml(): Html
+    {
         return Html::el('a', [
             'href' => $this->getUrl()
         ]);
     }
 
-    protected function buildNonLinkHtml(): Html {
+    protected function buildNonLinkHtml(): Html
+    {
         return Html::el('span');
     }
 
-    protected function buildItemHtml(bool $showLink = true, ?Html $prependHtml = null, ?Html $appendHtml = null): Html {
+    protected function buildItemHtml(bool $showLink = true, ?Html $prependHtml = null, ?Html $appendHtml = null): Html
+    {
         $html = null;
         if ($showLink && $url = $this->getUrl()) {
             $html = $this->buildLinkHtml();
@@ -259,11 +271,13 @@ class Menu extends Control {
         return $html;
     }
 
-    private function renderHtml(Html $html) {
+    private function renderHtml(Html $html)
+    {
         echo $html->render();
     }
 
-    public function renderItem(bool $showLink = true) {
+    public function renderItem(bool $showLink = true)
+    {
         /** @noinspection PhpDeprecationInspection */
         $this->callBeforeRender();
         $html = $this->buildItemHtml($showLink);
@@ -274,12 +288,13 @@ class Menu extends Control {
      * @param string $rootName
      * @throws MenuException
      */
-    public function renderTree(string $rootName = null) {
+    public function renderTree(string $rootName = null)
+    {
         /** @noinspection PhpDeprecationInspection */
         $this->callBeforeRender();
         $template = $this->getTemplate();
         $template->setFile(__DIR__ . '/Tree.latte');
-        if ($rootName == NULL) {
+        if ($rootName == null) {
             /** @noinspection PhpUndefinedFieldInspection */
             $template->node = $this;
         } else {
@@ -294,7 +309,8 @@ class Menu extends Control {
         $template->render();
     }
 
-    public function renderSubtree() {
+    public function renderSubtree()
+    {
         /** @noinspection PhpDeprecationInspection */
         $this->callBeforeRender();
         $template = $this->getTemplate();
@@ -304,7 +320,8 @@ class Menu extends Control {
         $template->render();
     }
 
-    protected function buildListHtml(): Html {
+    protected function buildListHtml(): Html
+    {
         return Html::el('ul', [
             'class' => $this->getClass()
         ]);
@@ -313,7 +330,8 @@ class Menu extends Control {
     /**
      * @return array of attribute => [values]
      */
-    protected function buildItemAttributes(): array {
+    protected function buildItemAttributes(): array
+    {
         $classes = [$this->getClass()];
         if ($this->isActive()) {
             $classes[] = 'active';
@@ -329,13 +347,15 @@ class Menu extends Control {
         ];
     }
 
-    protected function buildListItemHtml(): Html {
+    protected function buildListItemHtml(): Html
+    {
         $html = Html::el('li', $this->buildItemAttributes());
         $html->addHtml($this->buildItemHtml());
         return $html;
     }
 
-    protected function buildPathHtml(): Html {
+    protected function buildPathHtml(): Html
+    {
         $html = $this->buildListHtml();
         /** @noinspection PhpUndefinedMethodInspection */
         $html->addClass('path');
@@ -346,14 +366,16 @@ class Menu extends Control {
         return $html;
     }
 
-    public function renderPath() {
+    public function renderPath()
+    {
         /** @noinspection PhpDeprecationInspection */
         $this->callBeforeRender();
         $html = $this->buildPathHtml();
         $this->renderHtml($html);
     }
 
-    protected function buildChildrenHtml(): Html {
+    protected function buildChildrenHtml(): Html
+    {
         $html = $this->buildListHtml();
         foreach ($this->getChildren() as $node) {
             if (!$node->isVisible()) {
@@ -368,10 +390,11 @@ class Menu extends Control {
      * @param string|NULL $nodeName
      * @throws MenuException
      */
-    public function renderChildren(string $nodeName = NULL) {
+    public function renderChildren(string $nodeName = null)
+    {
         /** @noinspection PhpDeprecationInspection */
         $this->callBeforeRender();
-        if ($nodeName == NULL) {
+        if ($nodeName == null) {
             $node = $this;
         } else {
             $node = $this->getDeepMenuComponent($nodeName);
@@ -385,7 +408,8 @@ class Menu extends Control {
      * @return Menu|null
      * @throws MenuException
      */
-    public function getDeepMenuComponent(string $name, bool $needed = true): ?Menu {
+    public function getDeepMenuComponent(string $name, bool $needed = true): ?Menu
+    {
         $all = $this->getComponents(true, Menu::class);
         foreach ($all as $one) {
             if ($one->getName() == $name) {
@@ -402,8 +426,10 @@ class Menu extends Control {
      * Is link url string?
      * @return bool
      */
-    public function hasDirectUrl(): bool {
-        if (is_string($this->link) && (substr($this->link, 0, 7) === "http://" || substr($this->link, 0, 8) === "https://")) {
+    public function hasDirectUrl(): bool
+    {
+        if (is_string($this->link) && (substr($this->link, 0, 7) === "http://" || substr($this->link, 0,
+                    8) === "https://")) {
             return true;
         }
         return false;
@@ -413,7 +439,8 @@ class Menu extends Control {
      * Generates url from link params if possible
      * @return null|string
      */
-    public function getUrl(): ?string {
+    public function getUrl(): ?string
+    {
         if ($this->link === null) {
             return null;
         }
@@ -445,7 +472,8 @@ class Menu extends Control {
      * @param callable|string|null $link
      * @return $this
      */
-    public function setLink($link): self {
+    public function setLink($link): self
+    {
         $this->link = $link;
         return $this;
     }
@@ -454,7 +482,8 @@ class Menu extends Control {
      * @param callable|string $title
      * @return $this
      */
-    public function setTitle($title): self {
+    public function setTitle($title): self
+    {
         $this->title = $title;
         return $this;
     }
@@ -463,7 +492,8 @@ class Menu extends Control {
      * Returns translated title
      * @return \string
      */
-    public function getTitle(): string {
+    public function getTitle(): string
+    {
         if (!$this->translator || $this->disableTranslation) {
             return $this->title;
         }
@@ -474,7 +504,8 @@ class Menu extends Control {
      * @param ITranslator|null $translator
      * @return $this
      */
-    public function setTranslator(?ITranslator $translator): self {
+    public function setTranslator(?ITranslator $translator): self
+    {
         $this->translator = $translator;
         return $this;
     }
@@ -483,7 +514,8 @@ class Menu extends Control {
      * @param bool $disable
      * @return $this
      */
-    public function disableTranslation(bool $disable = true): self {
+    public function disableTranslation(bool $disable = true): self
+    {
         $this->disableTranslation = $disable;
         return $this;
     }
@@ -493,7 +525,8 @@ class Menu extends Control {
      * @param bool $deep
      * @return \Iterator|self[]
      */
-    public function getChildren($deep = FALSE): array {
+    public function getChildren($deep = false): array
+    {
         $result = [];
         foreach ($this->getComponents($deep, self::class) as $component) {
             $result[] = $component;
@@ -506,7 +539,8 @@ class Menu extends Control {
      * @param callback|string $show
      * @return $this
      */
-    public function setShow($show): self {
+    public function setShow($show): self
+    {
         $this->show = $show;
 
         return $this;
@@ -516,7 +550,8 @@ class Menu extends Control {
      * Checks if item is visible (even by controling permissions)
      * @return \bool
      */
-    public function getShow(): bool {
+    public function getShow(): bool
+    {
         if (is_callable($this->show)) {
             return (boolean)call_user_func($this->show, $this);
         }
@@ -527,7 +562,8 @@ class Menu extends Control {
      * Checks if is allowed and is shown
      * @return bool
      */
-    public function isVisible(): bool {
+    public function isVisible(): bool
+    {
         return $this->getShow() && $this->isAllowed();
     }
 
@@ -538,7 +574,8 @@ class Menu extends Control {
      * @param string $paramName
      * @return $this
      */
-    public function setLinkParamNeeded(?string $key = null, $defaultValue = null, string $paramName = 'id'): self {
+    public function setLinkParamNeeded(?string $key = null, $defaultValue = null, string $paramName = 'id'): self
+    {
         $this->linkParamNeeded = $key;
         $this->linkParamValue = $defaultValue;
         $this->linkParamName = $paramName;
@@ -550,7 +587,8 @@ class Menu extends Control {
      * @param callback|string $class
      * @return $this
      */
-    public function setClass($class): self {
+    public function setClass($class): self
+    {
         $this->class = $class;
         return $this;
     }
@@ -560,12 +598,14 @@ class Menu extends Control {
      * @param \string|null $class
      * @return $this
      */
-    public function setIcon(?string $class): self {
+    public function setIcon(?string $class): self
+    {
         $this->icon = $class;
         return $this;
     }
 
-    public function getIcon(): ?string {
+    public function getIcon(): ?string
+    {
         return $this->icon;
     }
 
@@ -573,7 +613,8 @@ class Menu extends Control {
      * Css class of item
      * @return \string|null
      */
-    public function getClass(): ?string {
+    public function getClass(): ?string
+    {
         if (is_callable($this->class)) {
             return call_user_func($this->class, $this);
         }
@@ -584,7 +625,8 @@ class Menu extends Control {
      * Is this menu item's link your actual position on the web?
      * @return bool
      */
-    public function isActive(): bool {
+    public function isActive(): bool
+    {
         return $this->active;
     }
 
@@ -592,7 +634,8 @@ class Menu extends Control {
      * Is this menu item your actual position on the web?
      * @return bool
      */
-    public function isCurrent(): bool {
+    public function isCurrent(): bool
+    {
         return ($this->currentable && $this->isActive());
     }
 
@@ -601,7 +644,8 @@ class Menu extends Control {
      * @param bool $bool
      * @return $this
      */
-    public function setCurentable(bool $bool = true): self {
+    public function setCurentable(bool $bool = true): self
+    {
         $this->currentable = $bool;
         return $this;
     }
@@ -610,7 +654,8 @@ class Menu extends Control {
      * Returns path of items back to the root menu
      * @return self[]
      */
-    public function getPath(): array {
+    public function getPath(): array
+    {
         $path = Array($this);
         $parent = $this->getParentMenu();
         if ($parent) {
@@ -623,7 +668,8 @@ class Menu extends Control {
      * Searches subtree for menu items marked as current
      * @return self[]
      */
-    public function findCurrent(): array {
+    public function findCurrent(): array
+    {
         return $this->find(function (Menu $node) {
             return $node->isCurrent();
         });
@@ -634,9 +680,10 @@ class Menu extends Control {
      * @param callback $check
      * @return self[]
      */
-    protected function find($check): array {
+    protected function find($check): array
+    {
         $result = Array();
-        foreach ($this->getChildren(TRUE) as $child) {
+        foreach ($this->getChildren(true) as $child) {
             if ((boolean)call_user_func($check, $child)) {
                 $result[] = $child;
             }
@@ -648,7 +695,8 @@ class Menu extends Control {
      * Returns path from root to first item marked as current
      * @return self[]
      */
-    public function getCurrentPath(): array {
+    public function getCurrentPath(): array
+    {
         $node = $this->findCurrent();
         if (count($node) == 0) {
             return Array($this);
@@ -659,15 +707,17 @@ class Menu extends Control {
     /**
      * Sets item as active
      * @param \bool $value
-     * @internal
      * @return $this;
+     * @internal
      */
-    public function setActive(bool $value = true): self {
+    public function setActive(bool $value = true): self
+    {
         $this->active = $value;
         return $this;
     }
 
-    public function getParentMenu(): ?self {
+    public function getParentMenu(): ?self
+    {
         /** @var self $parent */
         $parent = $this->getParent();
         if (!is_a($parent, self::class)) {
@@ -681,10 +731,11 @@ class Menu extends Control {
      * this flag can be set also to parent item automatically
      * @param bool $value
      * @param bool|int $toParent how many layers of parents, true means all
-     * @internal
      * @return $this
+     * @internal
      */
-    public function setInPath(bool $value = true, $toParent = true): self {
+    public function setInPath(bool $value = true, $toParent = true): self
+    {
         $this->inPath = $value;
         if ($toParent) {
             $parent = $this->getParentMenu();
@@ -700,7 +751,8 @@ class Menu extends Control {
      * @param bool $currentableOnly only if is currentable
      * @return bool
      */
-    public function isInPath(bool $currentableOnly = false) {
+    public function isInPath(bool $currentableOnly = false)
+    {
         if ($currentableOnly && !$this->currentable) {
             return false;
         }
@@ -711,22 +763,27 @@ class Menu extends Control {
      * Automatically sets current, active and inPath flags using presenter
      * @throws MenuException
      */
-    public function setActiveByPresenter(): void {
+    public function setActiveByPresenter(): void
+    {
         if ($this->link === null) {
             $this->setActive(false);
-        } else if ($this->hasDirectUrl()) {
-            $this->setActive(false);
-        } else if (is_callable($this->link)) {
-            $this->setActive(false);
         } else {
-            try {
-                $is_current_link = $this->getPresenter()->isLinkCurrent($this->link);
-            } catch (InvalidLinkException $e) {
-                throw new MenuException("Unable to generate link", 0, $e);
-            }
-            $this->setActive($is_current_link);
-            if ($is_current_link) {
-                $this->setInPath($is_current_link);
+            if ($this->hasDirectUrl()) {
+                $this->setActive(false);
+            } else {
+                if (is_callable($this->link)) {
+                    $this->setActive(false);
+                } else {
+                    try {
+                        $is_current_link = $this->getPresenter()->isLinkCurrent($this->link);
+                    } catch (InvalidLinkException $e) {
+                        throw new MenuException("Unable to generate link", 0, $e);
+                    }
+                    $this->setActive($is_current_link);
+                    if ($is_current_link) {
+                        $this->setInPath($is_current_link);
+                    }
+                }
             }
         }
         foreach ($this->getChildren() as $child) {
@@ -739,7 +796,8 @@ class Menu extends Control {
      * @param string $key
      * @param mixed $value
      */
-    public function setLinkParam(string $key, $value) {
+    public function setLinkParam(string $key, $value)
+    {
         if (isset($this->linkParamPreprocesors[$key])) {
             $value = call_user_func($this->linkParamPreprocesors[$key], $value, $key, $this);
         }
@@ -761,7 +819,10 @@ class Menu extends Control {
      * @param callable|null $callback
      * @return $this
      */
-    public function setLinkParamPreprocessor(string $key = self::LINK_PARAM_PROCESSOR_ALL, ?callable $callback): self {
+    public function setLinkParamPreprocessor(
+        string $key = self::LINK_PARAM_PROCESSOR_ALL,
+        ?callable $callback = null
+    ): self {
         if (!$callback) {
             unset($this->linkParamPreprocesors[$key]);
             return $this;
@@ -776,7 +837,8 @@ class Menu extends Control {
      * @param null|string $privilege
      * @return $this
      */
-    public function setAuthorization(?string $resource = NULL, ?string $privilege = NULL): self {
+    public function setAuthorization(?string $resource = null, ?string $privilege = null): self
+    {
         $this->authorizationResource = $resource;
         $this->authorizationPrivilege = $privilege;
         $this->authorizationSet = true;
@@ -786,7 +848,8 @@ class Menu extends Control {
     /**
      * @return $this
      */
-    public function resetAuthorization(): self {
+    public function resetAuthorization(): self
+    {
         $this->authorizationResource = null;
         $this->authorizationPrivilege = null;
         $this->authorizationSet = false;
@@ -798,7 +861,8 @@ class Menu extends Control {
      * Checks if user is authorized to view this item
      * @return \bool
      */
-    public function isAllowed(): bool {
+    public function isAllowed(): bool
+    {
         if (!$this->authorizationSet) {
             return true;
         }
@@ -807,7 +871,8 @@ class Menu extends Control {
             ->isAllowed($this->authorizationResource, $this->authorizationPrivilege);
     }
 
-    protected function callBeforeRender() {
+    protected function callBeforeRender()
+    {
         if ($this->beforeRenderCalled) {
             return;
         }
@@ -819,16 +884,18 @@ class Menu extends Control {
     /**
      * @deprecated
      */
-    protected function beforeRender() {
+    protected function beforeRender()
+    {
 
     }
 
     /**
      * @return self
      */
-    public function getMenuRoot() : self {
+    public function getMenuRoot(): self
+    {
         $parent = $this->getParent();
-        if(!is_a($parent,self::class)){
+        if (!is_a($parent, self::class)) {
             return $this;
         }
         /** @var $parent self */

@@ -2,13 +2,14 @@
 /**
  * Created by IntelliJ IDEA.
  * User: stopka
- * Date: 15.12.17
- * Time: 0:10
+ * Date: 29.3.18
+ * Time: 11:06
  */
 
 namespace Stopka\NetteMenuControl;
 
 
-class MenuException extends \Exception {
-
+interface IMenuFactory
+{
+    public function create(): Menu;
 }
